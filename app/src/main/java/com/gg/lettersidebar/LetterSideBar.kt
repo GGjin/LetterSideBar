@@ -24,7 +24,8 @@ class LetterSideBar : View {
                 "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V",
                 "W", "X", "Y", "Z", "#")
     }
-
+    private var mViewWidth = 0
+    private var mViewHeight = 0
     private val mPaint: Paint  by lazy {
         Paint().apply {
             isAntiAlias = true
@@ -59,14 +60,26 @@ class LetterSideBar : View {
         val width = left + right + mPaint.measureText("A").toInt()
         val height = MeasureSpec.getSize(heightMeasureSpec)
         setMeasuredDimension(width, height)
+
+
+        mViewWidth = View.MeasureSpec.getSize(widthMeasureSpec)
+        if (mViewHeight == 0) {
+            mViewHeight = View.MeasureSpec.getSize(heightMeasureSpec)
+        }
+        val widthMode = View.MeasureSpec.getMode(widthMeasureSpec)
+
+        if (widthMode == View.MeasureSpec.AT_MOST || widthMode == View.MeasureSpec.UNSPECIFIED) {
+            mViewWidth = ((mPaint.measureText(mLetterList[1]) + paddingLeft + paddingRight).toInt())
+        }
+        setMeasuredDimension(mViewWidth, mViewHeight)
     }
 
 
     override fun onDraw(canvas: Canvas?) {
         mLetterList.forEachIndexed { index, s ->
-            val x = width / 2 - mPaint.measureText(s) / 2
+            val x = mViewWidth / 2 - mPaint.measureText(s) / 2
             mPaint.fontMetricsInt.bottom
-            val baseLine = height / mLetterList.size + height / mLetterList.size * index - mPaint.fontMetrics.bottom / 2 - mPaint.fontMetrics.top / 2
+            val baseLine = mViewHeight / mLetterList.size + mViewHeight / mLetterList.size * index - mPaint.fontMetrics.bottom / 2 - mPaint.fontMetrics.top / 2
             if (s == mCurrentLetter) {
                 canvas?.drawText(s, x, baseLine, mChoosePaint)
             } else {
@@ -75,17 +88,21 @@ class LetterSideBar : View {
         }
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        Log.w("y",event?.y!!.toString())
-        val touchPosition = (event?.y!! / height * mLetterList.size).toInt()
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        var touchPosition = (event.y / height * mLetterList.size).toInt()
         val mOldLetter = mCurrentLetter
         if (touchPosition !in 0..mLetterList.size) {
             mCurrentTouch = false
             touchLetterListener()
             return true
         }
+        if (touchPosition < 0)
+            touchPosition = 0
+
+        if (touchPosition > mLetterList.size - 1)
+            touchPosition = mLetterList.size - 1
         mCurrentLetter = mLetterList[touchPosition]
-        when (event?.action) {
+        when (event.action) {
             MotionEvent.ACTION_UP -> {
                 mCurrentTouch = false
                 invalidate()
@@ -99,25 +116,6 @@ class LetterSideBar : View {
                 }
             }
         }
-
-//        when (event?.action) {
-//            MotionEvent.ACTION_DOWN,
-//            MotionEvent.ACTION_MOVE -> {
-//                var index = x / (height / 27)
-//                if (index < 0)
-//                    index = 0f
-//                if (index > 27)
-//                    index = 27f
-//
-//                mCurrentLetter = mLetterList[index.toInt()]
-//                Log.w("letter", mCurrentLetter)
-//                Log.w("y", x.toString())
-//                Log.w("index", index.toString())
-//
-//                invalidate()
-//            }
-//        }
-
 
         return true
     }
